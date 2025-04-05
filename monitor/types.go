@@ -4,12 +4,13 @@ type Config struct {
 	RPCEndpoint       string
 	WebSocketEndpoint string
 	Wallet            string
-	Filter            Filter
+	Filters           Filter
+	TestMode          bool // New field for test mode
 }
 
 type Filter struct {
-	TokenProgramID string  // Filter for SPL token transfers (empty = no filter)
-	MinSOL         float64 // Minimum SOL amount (0 = no filter)
+	TokenProgramID string
+	MinSOL         float64
 }
 
 type Monitor struct {

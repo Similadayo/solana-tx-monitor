@@ -33,9 +33,11 @@ func (w *WebSocketClient) Subscribe(ctx context.Context, out chan<- string) {
 		return
 	}
 	defer sub.Unsubscribe()
-	defer w.Client.Close() // Explicitly close WebSocket connection
+	defer w.Client.Close()
 
 	fmt.Printf("Subscribed to wallet: %s\n", w.Wallet.String())
+	out <- "WebSocket connection is live" // Confirm connection
+
 	for {
 		select {
 		case <-ctx.Done():

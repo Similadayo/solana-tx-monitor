@@ -10,22 +10,19 @@ import (
 )
 
 type RPCClient struct {
-	Client *rpc.Client
-	Wallet solana.PublicKey
-	Filter Filter
+	Client   *rpc.Client
+	Wallet   solana.PublicKey
+	Filter   Filter
+	TestMode bool // Add test mode flag
 }
 
-func NewRPCClient(endpoint, wallet string, filter Filter) (*RPCClient, error) {
+func NewRPCClient(endpoint, wallet string, filter Filter, testMode bool) (*RPCClient, error) {
 	client := rpc.New(endpoint)
 	pubKey, err := solana.PublicKeyFromBase58(wallet)
 	if err != nil {
 		return nil, err
 	}
-	return &RPCClient{
-		Client: client,
-		Wallet: pubKey,
-		Filter: filter,
-	}, nil
+	return &RPCClient{Client: client, Wallet: pubKey, Filter: filter, TestMode: testMode}, nil
 }
 
 func (r *RPCClient) Poll(ctx context.Context, out chan<- string) {
@@ -40,6 +37,16 @@ func (r *RPCClient) Poll(ctx context.Context, out chan<- string) {
 			return
 		case <-ticker.C:
 			fmt.Printf("Polling for wallet: %s\n", r.Wallet.String())
+			if r.TestMode {
+				// Simulate a network check in test mode
+				_, err := r.Client.GetVersion(ctx)
+				if err != nil {
+					out <- fmt.Sprintf("Test mode: RPC connection failed: %v", err)
+				} else {
+					out <- "Test mode: RPC connection is live"
+				}
+				continue
+			}
 			sigs, err := r.Client.GetSignaturesForAddress(ctx, r.Wallet)
 			if err != nil {
 				fmt.Printf("RPC error: %v\n", err)
@@ -60,7 +67,6 @@ func (r *RPCClient) Poll(ctx context.Context, out chan<- string) {
 				if tx == nil || tx.Meta == nil {
 					continue
 				}
-
 				if r.applyFilters(tx) {
 					out <- fmt.Sprintf("Tx Signature (RPC): %s", sig.Signature)
 				}

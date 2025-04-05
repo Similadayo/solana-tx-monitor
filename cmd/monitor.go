@@ -8,11 +8,13 @@ import (
 var wallet string
 var tokenProgramID string
 var minSOL float64
+var testMode bool
 
 func init() {
 	monitorCmd.Flags().StringVarP(&wallet, "wallet", "w", "", "Wallet public key to monitor (required)")
 	monitorCmd.Flags().StringVar(&tokenProgramID, "filter-token", "", "Filter for SPL token transfers (e.g., TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)")
 	monitorCmd.Flags().Float64Var(&minSOL, "min-sol", 0, "Minimum SOL amount to filter (e.g., 1.0)")
+	monitorCmd.Flags().BoolVar(&testMode, "test", false, "Run in test mode to verify connections without transactions")
 	monitorCmd.MarkFlagRequired("wallet")
 	rootCmd.AddCommand(monitorCmd)
 }
@@ -25,10 +27,11 @@ var monitorCmd = &cobra.Command{
 			RPCEndpoint:       "https://api.devnet.solana.com",
 			WebSocketEndpoint: "wss://api.devnet.solana.com",
 			Wallet:            wallet,
-			Filter: monitor.Filter{
+			Filters: monitor.Filter{
 				TokenProgramID: tokenProgramID,
 				MinSOL:         minSOL,
 			},
+			TestMode: testMode,
 		}
 		mon, err := monitor.NewMonitor(cfg)
 		if err != nil {

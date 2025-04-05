@@ -8,7 +8,7 @@ import (
 )
 
 func NewMonitor(cfg Config) (*Monitor, error) {
-	rpcClient, err := NewRPCClient(cfg.RPCEndpoint, cfg.Wallet, cfg.Filter) // Pass filters
+	rpcClient, err := NewRPCClient(cfg.RPCEndpoint, cfg.Wallet, cfg.Filters, cfg.TestMode)
 	if err != nil {
 		return nil, err
 	}
@@ -18,8 +18,6 @@ func NewMonitor(cfg Config) (*Monitor, error) {
 	}
 	return &Monitor{Config: cfg, RPC: rpcClient, WS: wsClient}, nil
 }
-
-// Rest of the file remains unchanged
 
 func (m *Monitor) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -38,8 +36,8 @@ func (m *Monitor) Start() {
 		select {
 		case msg := <-out:
 			fmt.Println(msg)
-			// Only reset timer on actual activity (tx signatures or WS updates)
-			if strings.HasPrefix(msg, "Tx Signature (RPC):") || strings.HasPrefix(msg, "Account Update (WS):") {
+			// Reset timer on meaningful activity or test mode messages
+			if strings.HasPrefix(msg, "Tx Signature (RPC):") || strings.HasPrefix(msg, "Account Update (WS):") || m.Config.TestMode {
 				if !inactivityTimeout.Stop() {
 					<-inactivityTimeout.C
 				}
@@ -49,9 +47,13 @@ func (m *Monitor) Start() {
 			fmt.Println("Monitoring stopped")
 			return
 		case <-inactivityTimeout.C:
-			fmt.Printf("No activity detected for wallet %s in the last 30 seconds on Devnet. Closing connections and exiting.\n", m.Config.Wallet)
+			if m.Config.TestMode {
+				fmt.Println("Test mode completed successfully")
+			} else {
+				fmt.Printf("No activity detected for wallet %s in the last 30 seconds on Devnet. Closing connections and exiting.\n", m.Config.Wallet)
+			}
 			cancel()
-			time.Sleep(1 * time.Second) // Allow goroutines to finish
+			time.Sleep(1 * time.Second)
 			return
 		}
 	}
