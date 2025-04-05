@@ -8,7 +8,7 @@ import (
 )
 
 func NewMonitor(cfg Config) (*Monitor, error) {
-	rpcClient, err := NewRPCClient(cfg.RPCEndpoint, cfg.Wallet)
+	rpcClient, err := NewRPCClient(cfg.RPCEndpoint, cfg.Wallet, cfg.Filter) // Pass filters
 	if err != nil {
 		return nil, err
 	}
@@ -18,6 +18,8 @@ func NewMonitor(cfg Config) (*Monitor, error) {
 	}
 	return &Monitor{Config: cfg, RPC: rpcClient, WS: wsClient}, nil
 }
+
+// Rest of the file remains unchanged
 
 func (m *Monitor) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
