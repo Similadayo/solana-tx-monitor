@@ -13,7 +13,7 @@ type RPCClient struct {
 	Client   *rpc.Client
 	Wallet   solana.PublicKey
 	Filter   Filter
-	TestMode bool // Add test mode flag
+	TestMode bool
 }
 
 func NewRPCClient(endpoint, wallet string, filter Filter, testMode bool) (*RPCClient, error) {
@@ -36,9 +36,13 @@ func (r *RPCClient) Poll(ctx context.Context, out chan<- string) {
 			fmt.Println("RPC polling stopped")
 			return
 		case <-ticker.C:
+			// Check context before polling to avoid canceled errors
+			if ctx.Err() != nil {
+				fmt.Println("RPC polling stopped due to context cancellation")
+				return
+			}
 			fmt.Printf("Polling for wallet: %s\n", r.Wallet.String())
 			if r.TestMode {
-				// Simulate a network check in test mode
 				_, err := r.Client.GetVersion(ctx)
 				if err != nil {
 					out <- fmt.Sprintf("Test mode: RPC connection failed: %v", err)
@@ -74,6 +78,8 @@ func (r *RPCClient) Poll(ctx context.Context, out chan<- string) {
 		}
 	}
 }
+
+// applyFilters remains unchanged
 
 func (r *RPCClient) applyFilters(tx *rpc.GetTransactionResult) bool {
 	if tx == nil || tx.Meta == nil || tx.Transaction == nil {
