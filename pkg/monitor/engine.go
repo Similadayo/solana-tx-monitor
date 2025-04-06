@@ -21,9 +21,14 @@ func NewMonitor(cfg Config) (*Monitor, error) {
 	return &Monitor{Config: cfg, RPC: rpcClient, WS: wsClient}, nil
 }
 
-func (m *Monitor) Start() {
+func (m *Monitor) Start(logCallback ...func(string)) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	m.cancel = cancel
+	defer func() {
+		if m.cancel != nil {
+			m.cancel()
+		}
+	}()
 
 	var outHandler interface {
 		Write(string) error
@@ -37,7 +42,7 @@ func (m *Monitor) Start() {
 		}
 		defer csvOut.Close()
 		outHandler = csvOut
-	default: // "console" or empty
+	default:
 		outHandler = output.NewConsoleOutput()
 	}
 
@@ -47,6 +52,9 @@ func (m *Monitor) Start() {
 
 	fmt.Println("Monitoring started for wallet:", m.Config.Wallet)
 	outHandler.Write("Monitoring started for wallet: " + m.Config.Wallet)
+	if len(logCallback) > 0 {
+		logCallback[0]("Monitoring started for wallet: " + m.Config.Wallet)
+	}
 
 	inactivityTimeout := time.NewTimer(30 * time.Second)
 	defer inactivityTimeout.Stop()
@@ -55,6 +63,9 @@ func (m *Monitor) Start() {
 		select {
 		case msg := <-out:
 			outHandler.Write(msg)
+			if len(logCallback) > 0 {
+				logCallback[0](msg)
+			}
 			if strings.HasPrefix(msg, "Tx Signature (RPC):") || strings.HasPrefix(msg, "Account Update (WS):") || m.Config.TestMode {
 				if !inactivityTimeout.Stop() {
 					<-inactivityTimeout.C
@@ -63,16 +74,31 @@ func (m *Monitor) Start() {
 			}
 		case <-ctx.Done():
 			outHandler.Write("Monitoring stopped")
+			if len(logCallback) > 0 {
+				logCallback[0]("Monitoring stopped")
+			}
 			return
 		case <-inactivityTimeout.C:
 			if m.Config.TestMode {
 				outHandler.Write("Test mode completed successfully")
+				if len(logCallback) > 0 {
+					logCallback[0]("Test mode completed successfully")
+				}
 			} else {
 				outHandler.Write(fmt.Sprintf("No activity detected for wallet %s in the last 30 seconds on Devnet. Closing connections and exiting.", m.Config.Wallet))
+				if len(logCallback) > 0 {
+					logCallback[0](fmt.Sprintf("No activity detected for wallet %s in the last 30 seconds on Devnet. Closing connections and exiting.", m.Config.Wallet))
+				}
 			}
 			cancel()
 			time.Sleep(1 * time.Second)
 			return
 		}
+	}
+}
+
+func (m *Monitor) Stop() {
+	if m.cancel != nil {
+		m.cancel()
 	}
 }

@@ -1,5 +1,7 @@
 package monitor
 
+import "context"
+
 type Config struct {
 	RPCEndpoint       string
 	WebSocketEndpoint string
@@ -19,4 +21,9 @@ type Monitor struct {
 	Config Config
 	RPC    *RPCClient
 	WS     *WebSocketClient
+	cancel context.CancelFunc // Add for stopping
+}
+
+func (m *Monitor) Logs() {
+	panic("unimplemented")
 }
