@@ -9,12 +9,14 @@ var wallet string
 var tokenProgramID string
 var minSOL float64
 var testMode bool
+var outputType string
 
 func init() {
 	monitorCmd.Flags().StringVarP(&wallet, "wallet", "w", "", "Wallet public key to monitor (required)")
 	monitorCmd.Flags().StringVar(&tokenProgramID, "filter-token", "", "Filter for SPL token transfers (e.g., TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA)")
 	monitorCmd.Flags().Float64Var(&minSOL, "min-sol", 0, "Minimum SOL amount to filter (e.g., 1.0)")
 	monitorCmd.Flags().BoolVar(&testMode, "test", false, "Run in test mode to verify connections without transactions")
+	monitorCmd.Flags().StringVar(&outputType, "output", "console", "Output type: 'console' or 'csv' (for csv, appends to 'transactions.csv')")
 	monitorCmd.MarkFlagRequired("wallet")
 	rootCmd.AddCommand(monitorCmd)
 }
@@ -31,7 +33,9 @@ var monitorCmd = &cobra.Command{
 				TokenProgramID: tokenProgramID,
 				MinSOL:         minSOL,
 			},
-			TestMode: testMode,
+			TestMode:   testMode,
+			OutputType: outputType,
+			OutputFile: "transactions.csv",
 		}
 		mon, err := monitor.NewMonitor(cfg)
 		if err != nil {
