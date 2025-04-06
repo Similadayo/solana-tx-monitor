@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/similadayo/solana-tx-monitor/monitor"
+	"github.com/similadayo/solana-tx-monitor/pkg/monitor"
 	"github.com/spf13/cobra"
 )
 
