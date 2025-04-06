@@ -13,11 +13,9 @@ var rootCmd = &cobra.Command{
 	Long:  "A powerful tool to monitor Solana wallets and programs with RPC, WebSocket, and extensible outputs.",
 }
 
-// Execute executes the root command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 }
