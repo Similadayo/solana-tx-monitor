@@ -22,7 +22,7 @@ func init() {
 	monitorCmd.Flags().Float64Var(&minSOL, "min-sol", 0, "Minimum SOL amount to filter (overrides config)")
 	monitorCmd.Flags().BoolVar(&testMode, "test", false, "Run in test mode (overrides config)")
 	monitorCmd.Flags().StringVar(&outputType, "output", "console", "Output type: 'console' or 'csv' (overrides config)")
-	monitorCmd.MarkFlagRequired("wallet") // Still required if no config
+	// Removed: monitorCmd.MarkFlagRequired("wallet")
 	rootCmd.AddCommand(monitorCmd)
 }
 
@@ -33,16 +33,11 @@ var monitorCmd = &cobra.Command{
 		cfg := monitor.Config{
 			RPCEndpoint:       "https://api.devnet.solana.com",
 			WebSocketEndpoint: "wss://api.devnet.solana.com",
-			Wallet:            wallet,
-			Filters: monitor.Filter{
-				TokenProgramID: tokenProgramID,
-				MinSOL:         minSOL,
-			},
-			TestMode:   testMode,
-			OutputType: outputType,
-			OutputFile: "transactions.csv",
+			OutputType:        "console",
+			OutputFile:        "transactions.csv",
 		}
 
+		// Load config file if provided
 		if configFile != "" {
 			data, err := ioutil.ReadFile(configFile)
 			if err != nil {
@@ -53,7 +48,7 @@ var monitorCmd = &cobra.Command{
 			}
 		}
 
-		// CLI flags override config file
+		// Override with CLI flags if set
 		if wallet != "" {
 			cfg.Wallet = wallet
 		}
@@ -66,10 +61,11 @@ var monitorCmd = &cobra.Command{
 		if testMode {
 			cfg.TestMode = true
 		}
-		if outputType != "console" {
+		if outputType != "" {
 			cfg.OutputType = outputType
 		}
 
+		// Validate wallet is set (either via config or flag)
 		if cfg.Wallet == "" {
 			panic("Wallet is required (set via --wallet or config file)")
 		}
