@@ -38,7 +38,3 @@ curl http://localhost:8080/transactions
 wallet: "YourAddress"
 output_type: "console"
 ```
-
-## License
-
-MIT License. See LICENSE for details.
